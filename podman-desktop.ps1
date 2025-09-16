@@ -14,7 +14,7 @@ function Get-WSLRelease()
     Write-Host "$x64Url"
     Invoke-WebRequest -Uri $x64Url -OutFile $x64Name -UseBasicParsing
 
-    StartInstaller -Name "$x64Name"
+    Get-WSLVersion
 }
 
 function StartInstaller()
@@ -23,14 +23,22 @@ function StartInstaller()
         [String]$Name
     )
     Start-Process msiexec -ArgumentList "/i $Name /qn" -Wait
-
-    Get-WSLVersion
 }
 
 function Get-WSLVersion()
 {
     winget list --accept-source-agreements | Select-String -Pattern "Windows Subsystem for Linux" | ForEach-Object { 
         if ( $_ -match "(\d+\.\d+\.\d+\.\d+)") {
+            $WSLVersionInstalled = $matches[0]
+            Write-Host ("Windows Subsystem for Linux Version " + $WSLVersionInstalled + " is Installed") -ForegroundColor Magenta
+            $x64Name | ForEach-Object {
+               if ($_ -match "(\d+\.\d+\.\d+\.\d+)") {
+                  if ("$matches[0]" -ne "$WSLVersionInstalled") {
+                     Write-Host ("Windows Subsystem for Linux Upgrading to " + $matches[0] + " Version") -ForegroundColor Green
+                  }
+               }
+            }
+	    StartInstaller -Name "$x64Name"
             Set-VirtualMachinePlatform
         }
     }
@@ -41,12 +49,12 @@ function Set-VirtualMachinePlatform()
     Write-Host "Enable Feature Microsoft-Windows-Subsystem-Linux" -ForegroundColor Cyan
     Write-Host "Enable Feature VirtualMachinePlatform" -ForegroundColor Cyan
     wsl --install --no-distribution
+    wsl --version
 }
 
 winget list --accept-source-agreements | Select-String -Pattern "Windows Subsystem for Linux" | ForEach-Object { 
     if ( $_ -match "(\d+\.\d+\.\d+\.\d+)") {
         Write-Host "Windows Subsystem for Linux is alright installed"
-        [Environment]::Exit(0)
     }
 }
 
