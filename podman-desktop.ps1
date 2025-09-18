@@ -33,15 +33,21 @@ function Get-WSLVersion()
             Write-Host ("Windows Subsystem for Linux Version " + $WSLVersionInstalled + " is Installed") -ForegroundColor Magenta
             $x64Name | ForEach-Object {
                if ($_ -match "(\d+\.\d+\.\d+\.\d+)") {
-                  if ("$matches[0]" -ne "$WSLVersionInstalled") {
-                     Write-Host ("Windows Subsystem for Linux Upgrading to " + $matches[0] + " Version") -ForegroundColor Green
-                  }
+                  if ($matches[0] -ne "$WSLVersionInstalled") {
+                     Write-Host ("Windows Subsystem for Linux Upgrading to Version: " + $matches[0]) -ForegroundColor Green
+	                   StartInstaller -Name "$x64Name"
+                     Set-VirtualMachinePlatform
+                  } else {
+                     Write-Host ("The Windows Linux subsystem is at the latest version") -ForegroundColor DarkGreen
+                     Start-Sleep -Seconds 5
+                     exit 0 
+                  } 
                }
             }
-	    StartInstaller -Name "$x64Name"
-            Set-VirtualMachinePlatform
         }
     }
+   StartInstaller -Name "$x64Name"
+   Set-VirtualMachinePlatform
 }
 
 function Set-VirtualMachinePlatform()
@@ -50,6 +56,7 @@ function Set-VirtualMachinePlatform()
     Write-Host "Enable Feature VirtualMachinePlatform" -ForegroundColor Cyan
     wsl --install --no-distribution
     wsl --version
+    Restart-Computer -Force
 }
 
 winget list --accept-source-agreements | Select-String -Pattern "Windows Subsystem for Linux" | ForEach-Object { 
